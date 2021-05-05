@@ -78,6 +78,26 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
     event valueChanged(uint256 olda, uint256 newa, uint8 id);
 
     //Section functions
+    /**
+     * @dev Base constructor of POOL childrens
+     *
+     *Parameters:
+     *   address erc20B             ERC20 address contract instance
+     *   uint256 feeLIQ             fee is discounted for each swapp and partitioned between liquidity providers only (1..999) allowed
+     *   uint256 feeOperation       fee is discounted for each swapp and send to operations account only (1..999) allowed
+     *   uint256 feeSTAKE,          fee is discounted for each swapp and send to benef. account only (1..999) allowed
+     *   address operations,        Account operations
+     *   address beneficiary,       Account benef. to reward stakers liq. providers in STAKE contract
+     *   address executor,          Account used for dapp to execute contracts functions where the fee is accumulated to be used in the dapp
+     *   address stake,             LiquidityManager contract instance, store and manage all liq.providers
+     *   bool isBNBenv              Set true is Binance blockchain (for future use)
+     *
+     * Requirements:
+     *      (feeLIQ + feeOperation + feeSTAKE) === 1000 allowed  relation 1 to 100 %
+     *
+     * IMPORTANT:
+     *          For the pool to be activated and working, the CreatePool function must be executed after deploying the contract
+     */
 
     constructor(
         address erc20B,
@@ -106,14 +126,35 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         _feeEXE = 418380000000000;
     }
 
+    /**
+     * @dev Get _isBNBenv
+     *
+     */
     function isBNB() public view returns (bool) {
         return _isBNBenv;
     }
 
+    /**
+     * @dev Get _beneficiary
+     *
+     */
     function getBeneficiary() public view returns (address) {
         return _beneficiary;
     }
 
+    /**
+     * @dev get uint256,bool type values of store
+     *
+     *   uint256 feeLIQ             fee is discounted for each swapp and partitioned between liquidity providers only (1..999) allowed
+     *   uint256 feeOperation       fee is discounted for each swapp and send to operations account only (1..999) allowed
+     *   uint256 feeSTAKE           fee is discounted for each swapp and send to benef. account only (1..999) allowed
+     *   uint256 _baseFee           Base for fee calculation
+     *   uint256 _rewPend           Value store acum. total pendings rewards tokens
+     *   uint256 _rewPendTKA        Value store acum. total pendings rewards coin
+     *   uint256 _feeEXE            Fee this is transfer to executor acc. (for each swapp) to get money to  perform dapp contract function executions
+     *   bool isBNBenv              Set true is Binance blockchain (for future use)
+     *
+     */
     function getValues()
         external
         view
@@ -139,6 +180,25 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
             _isBNBenv
         );
     }
+
+    /**
+     * @dev set uint256 type values store  according to the value of set
+     *Parameters:
+     * set equal to..
+     *
+     * 1  uint256 feeLIQ             fee is discounted for each swapp and partitioned between liquidity providers only (1..999) allowed
+     * 2  uint256 feeOperation       fee is discounted for each swapp and send to operations account only (1..999) allowed
+     * 3  uint256 feeSTAKE           fee is discounted for each swapp and send to benef. account only (1..999) allowed
+     * 4  uint256 _baseFee           Base for fee calculation
+     * 5  uint256 _rewPend           Value store acum. total pendings rewards tokens
+     * 6  uint256 _rewPendTKA        Value store acum. total pendings rewards coin
+     * 7  uint256 _feeEXE            Fee this is transfer to executor acc. (for each swapp) to get money to  perform dapp contract function executions
+     *
+     * Emit {valueChanged} evt
+     *
+     * Requirements:
+     *      only Is InOwners require
+     */
 
     function setValues(uint256 value, uint8 id)
         external
@@ -190,6 +250,16 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev get address type values of store
+     *
+     *   address operations,        Operations wallet
+     *   address beneficiary,       Benef. wallet to reward stakers liq. providers in STAKE contract
+     *   address executor,          Wallet used for dapp to execute contracts functions where the fee is accumulated to be used in the dapp
+     *   address stake,             LiquidityManager contract instance, store and manage all liq.providers
+     *   address erc20B             ERC20 address contract instance
+     *
+     */
     function getAddress()
         external
         view
@@ -204,6 +274,22 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return (_operations, _beneficiary, _executor, _stakeable, _erc20B);
     }
 
+    /**
+     * @dev set address type values store  according to the value of set
+     *Parameters:
+     * set equal to..
+     *
+     * 1  address operations,        Operations wallet
+     * 2  address beneficiary,       Benef. wallet to reward stakers liq. providers in STAKE contract
+     * 3  address executor,          Wallet used for dapp to execute contracts functions where the fee is accumulated to be used in the dapp
+     * 4  address stake,             LiquidityManager contract instance, store and manage all liq.providers
+     * 5  address erc20B             ERC20 address contract instance
+     *
+     * Emit {AddressChanged} evt
+     *
+     * Requirements:
+     *      only Is InOwners require
+     */
     function setAddress(address newa, uint8 id)
         external
         onlyIsInOwners
@@ -244,6 +330,10 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev get sum of all _feeXX to perform master fee calculation
+     *
+     */
     function getFee() internal view returns (uint256) {
         uint256 fee = _feeLIQ + _feeSTAKE + _feeOperation;
         if (fee > _baseFee) {
@@ -253,6 +343,10 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return _baseFee - fee;
     }
 
+    /**
+     * @dev get swapp price with the discounted fee
+     *
+     */
     function price(
         uint256 input_amount,
         uint256 input_reserve,
@@ -265,6 +359,10 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return numerator.div(denominator);
     }
 
+    /**
+     * @dev get swapp price with no fee
+     *
+     */
     function planePrice(
         uint256 input_amount,
         uint256 input_reserve,
@@ -277,6 +375,15 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return numerator.div(denominator);
     }
 
+    /**
+     * @dev get the Calculate the amount fees corresponding to each sector
+     *
+     *      uint256 remanider amount
+     *      uint256 amount for liq providers
+     *      uint256 amount for operations
+     *      uint256 amount for stakers rewards
+     *
+     */
     function calcFees(uint256 amount)
         internal
         view
@@ -297,6 +404,13 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return (remainder, liq, oper, stake);
     }
 
+    /**
+     * @dev get the Calculate the amount correspondig to liq provider
+     *
+     *      uint256 part amount
+     *      uint256 remainder
+     *
+     */
     function getCalcRewardAmount(
         address account,
         uint256 amount,
@@ -311,6 +425,12 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         return (part, amount - part);
     }
 
+    /**
+     * @dev Substract from reward pending acum.
+     *
+     *      bool isTKA is cthe coin part
+     *
+     */
     function substractRewPend(uint256 amount, bool isTKA)
         internal
         returns (bool)

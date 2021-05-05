@@ -77,6 +77,27 @@ contract MPtoken is MPbase {
 
     //Section functions
 
+    /**
+     * @dev Constructor of ERC20 (token A) / ERC20 pool (token B)
+     *
+     * Parameters:
+     *   address erc20A             ERC20 address contract instance     
+     *   address erc20B             ERC20 address contract instance
+     *   uint256 feeLIQ             fee is discounted for each swapp and partitioned between liquidity providers only (1..999) allowed
+     *   uint256 feeOperation       fee is discounted for each swapp and send to operations account only (1..999) allowed
+     *   uint256 feeSTAKE,          fee is discounted for each swapp and send to benef. account only (1..999) allowed
+     *   address operations,        Account operations
+     *   address beneficiary,       Account benef. to reward stakers liq. providers in STAKE contract
+     *   address executor,          Account used for dapp to execute contracts functions where the fee is accumulated to be used in the dapp
+     *   address stake,             LiquidityManager contract instance, store and manage all liq.providers
+     *   bool isBNBenv              Set true is Binance blockchain (for future use)
+     *
+     * Requirements:
+     *      (feeLIQ + feeOperation + feeSTAKE) === 1000 allowed  relation 1 to 100 %
+     *
+     * IMPORTANT:
+     *          For the pool to be activated and working, the CreatePool function must be executed after deploying the contract
+     */
     constructor(
         address erc20A,
         address erc20B,
@@ -106,10 +127,23 @@ contract MPtoken is MPbase {
         _tokenA = IERC20(erc20A);
     }
 
+
+    /**
+     * @dev  get token A address
+     *
+     */
     function getTokenAAddr() public view returns (address) {
         return _erc20A;
     }
 
+    /**
+     * @dev set address tokenA a inicialize instance
+     *
+     * Emit {TokenAChanged} evt
+     *
+     * Requirements:
+     *      only Is InOwners require
+     */
     function setTokenAAddr(address news)
         external
         onlyIsInOwners
@@ -123,6 +157,19 @@ contract MPtoken is MPbase {
         return true;
     }
 
+    /**
+     * @dev  Inicialize pool instance
+     *      reverts for any transfer failure
+     *
+     * Returns new liquidity pool.
+     *
+     * Emit {PoolCreated} evt.
+     *
+     * Requirements:
+     *      payable && _tokenA.allowance && _tokenB.allowance &&  totalLiquidity == 0 && (msg.value > 0
+     *
+     * lock type: nonReentrant
+     */
     function createPool(uint256 tokenA_amount, uint256 tokenB_amount)
         external
         nonReentrant
@@ -163,6 +210,25 @@ contract MPtoken is MPbase {
         return totalLiquidity;
     }
 
+
+    /**
+     * @dev  Migrate from other pool
+     *      reverts for any transfer failure
+     *
+     * Returns new liquidity pool.
+     *
+     * Emit {PoolCreated} evt.
+     *
+     * Requirements:
+     *     only is owner  && _tokenA.allowance && _tokenB.allowance &&  totalLiquidity == 0 && (msg.value > 0
+     *
+     * lock type: nonReentrant
+     *
+     * IMPORTANT:
+     *      tokenA_Amount and tokenB_Amount  must be exact token balance older pool amount
+     *      newLiq must be exact to older pool liquidity
+     *
+     */
     function migratePool(
         uint256 tokenA_amount,
         uint256 tokenB_amount,
@@ -203,6 +269,25 @@ contract MPtoken is MPbase {
         return totalLiquidity;
     }
 
+
+    /**
+     * @dev  Close and desactivacte this pool
+     *      reverts for any transfer failure
+     *
+     *
+     * Emit {PoolClosed} evt.
+     *
+     * Requirements:
+     *    only is owner
+     *
+     * lock type: nonReentrant
+     *
+     * IMPORTANT:
+     *      Is set to pause cannot suitable for swapp or liquidity operations
+     *      All funds (tokens A & B) are transfered to operation wallet
+     *      liquidity pool is set to 0
+     *
+     */
     function closePool() external nonReentrant onlyIsInOwners returns (bool) {
         uint256 tka = _tokenA.balanceOf(address(this));
         require(_tokenA.transfer(_operations, tka));
@@ -219,6 +304,14 @@ contract MPtoken is MPbase {
         return true;
     }
 
+    /**
+     * @dev  Calculate that the amount to be used does not exceed 10%
+     *
+     * parameter: isTKA true if token A amount
+     *
+     * Return true is ower 10% limit
+     *
+     */
     function isOverLimit(uint256 amount, bool isTKA)
         public
         view
@@ -227,6 +320,11 @@ contract MPtoken is MPbase {
         return (getPercImpact(amount, isTKA) > 10);
     }
 
+    /**
+     * @dev  Calculate % Of estimated total impact on liquidity
+     *
+     * parameter: isTKA true if token A amount
+     */
     function getPercImpact(uint256 amount, bool isTKA)
         public
         view
@@ -248,6 +346,10 @@ contract MPtoken is MPbase {
         return uint8(100);
     }
 
+    /**
+     * @dev  Calculate an return the maximum amount allowed to use
+     *
+     */
     function getMaxAmountSwap() public view returns (uint256, uint256) {
         return (
             _tokenA.balanceOf(address(this)).mul(10).div(100),
@@ -255,6 +357,11 @@ contract MPtoken is MPbase {
         );
     }
 
+
+    /**
+     * @dev  Calculates the amount of tokensB to be delivered based on the amount of tokenA receive (swapp)
+     *
+     */
     function currentAtoB(uint256 tokenA_amount) public view returns (uint256) {
         return
             price(
@@ -264,6 +371,10 @@ contract MPtoken is MPbase {
             );
     }
 
+    /**
+     * @dev  Calculates the amount of tokensA to be delivered based on the amount of tokensB receive (swapp)
+     *
+     */
     function currentBtoA(uint256 tokenB_amount) public view returns (uint256) {
         return
             price(
@@ -273,6 +384,17 @@ contract MPtoken is MPbase {
             );
     }
 
+    /**
+     * @dev  Make the withdrawal of the reward to the user's wallet (only for internal contract calls)
+     *      reverts for any transfer failure
+     *
+     * Parameter : isTKA If true to token A withdraw
+     *
+     * Requirements:
+     *    not isPaused && _stakes.StakeExist
+     *
+     *
+     */
     function _withdrawReward(
         address account,
         uint256 amount,
@@ -309,6 +431,18 @@ contract MPtoken is MPbase {
         return _stakes.changeReward(account, 0, remainder, 1, isTKA, true);
     }
 
+    /**
+     * @dev  Make the withdrawal of the reward to the user's wallet
+     *      reverts for any transfer failure
+     *
+     * Parameter : isTKA If true to token A withdraw
+     *
+     * Requirements:
+     *    not isPaused
+     *
+     * lock type: nonReentrant
+     *
+     */
     function WithdrawReward(uint256 amount, bool isTKA)
         external
         nonReentrant
@@ -323,6 +457,20 @@ contract MPtoken is MPbase {
         return true;
     }
 
+    /**
+     * @dev  Make the collect of pendig rew. and withdrawal the reward to the user's wallet
+     *      reverts for any transfer failure
+     *
+     * Parameter :
+     *      isTKA If true to token A withdraw
+     *      rewardPending: calculated form dapp of pending reward
+     *
+     * Requirements:
+     *    only Is InOwners
+     *
+     * lock type: nonReentrant
+     *
+     */
     function WithdrawRewardDAPP(
         address account,
         uint256 rewardPending,
@@ -338,6 +486,21 @@ contract MPtoken is MPbase {
         return true;
     }
 
+
+    /**
+     * @dev  Make the collect of pendig rew to reward liq. user
+     *      reverts for any transfer failure
+     *
+     * Parameter :
+     *      isTKA: If true to token A withdraw
+     *      amount: calculated form dapp of pending reward
+     *
+     * Requirements:
+     *    payable {_fee} for dapp executions contracts calls
+     *
+     * lock type: nonReentrant
+     *
+     */
     function CollectReward(uint256 amount, bool isTKA)
         external
         payable
@@ -357,12 +520,30 @@ contract MPtoken is MPbase {
         return true;
     }
 
+
+    /**
+     * @dev  Make the token A to token B swapp an transfer to user wallet
+     *      reverts for any transfer failure
+     *
+     * Requirements:
+     *    not paused  && totalLiquidity > 0 && not isOverLimit && _tokenA.allowance
+     *
+     * Emit {PurchasedTokens} evt.
+     *
+     * lock type: nonReentrant
+     *
+     */
     function sellTokenB(uint256 tka_amount)
         external
         nonReentrant
         returns (uint256)
     {
         require(!isPaused(), "p");
+
+        require(
+            _tokenA.allowance(_msgSender(), address(this)) >= tokena_amount,
+            "0"
+        );
 
         require(totalLiquidity > 0, "1");
 
@@ -410,6 +591,19 @@ contract MPtoken is MPbase {
         return tokens_bought;
     }
 
+
+    /**
+     * @dev  Make the token B to token A swapp an transfer to user wallet
+     *      reverts for any transfer failure
+     *
+     * Requirements:
+     *     not paused  && totalLiquidity > 0 && not isOverLimit &&  _tokenB.allowance
+     *
+     * Emit {PurchasedTokens} evt.
+     *
+     * lock type: nonReentrant
+     *
+     */
     function sellTokenA(uint256 tokenb_amount)
         external
         nonReentrant
@@ -469,6 +663,11 @@ contract MPtoken is MPbase {
         return tka_bought;
     }
 
+
+    /**
+     * @dev get the Calculates the necesary amount of token in base of token A added for add liquidity operation
+     *
+     */
     function calcTokenBToAddLiq(uint256 tokenA) public view returns (uint256) {
         return
             (
@@ -479,6 +678,18 @@ contract MPtoken is MPbase {
                 .add(1);
     }
 
+    /**
+     * @dev  Add liquidity to porvider
+     *      reverts for any transfer failure
+     *
+     * Requirements:
+     *      not paused   &&  _tokenB.allowance &&  _tokenA.allowance
+     *
+     * Emit {LiquidityChanged} evt.
+     *
+     * lock type: nonReentrant
+     *
+     */
     function AddLiquidity(uint256 tokenA_amount)
         external
         nonReentrant
@@ -529,6 +740,10 @@ contract MPtoken is MPbase {
         return liquidity_minted;
     }
 
+    /**
+     * @dev Calculates the amount of token A - token B that user can withdraw in base of liq amount
+     *
+     */
     function getValuesLiqWithdraw(address investor, uint256 liq)
         public
         view
@@ -551,6 +766,12 @@ contract MPtoken is MPbase {
         return (tka_amount, tokenB_amount);
     }
 
+
+
+    /**
+     * @dev Calculates the MAX amount of token A - token B that user can withdraw
+     *
+     */
     function getMaxValuesLiqWithdraw(address investor)
         public
         view
@@ -579,6 +800,22 @@ contract MPtoken is MPbase {
         return (inv, tka_amount, tokenB_amount);
     }
 
+    /**
+     * @dev  Make the liquidity withdrawal   (only for internal contract calls)
+     *      reverts for any transfer failure
+     *
+     * Parameter : liquid amount to substract
+     *
+     * Returns:
+     *      token A & token B amount transfered
+     *
+     * Emit {LiquidityChanged} evt.
+     *
+     * Requirements:
+     *    liq provider exist && retired  <= invested
+     *
+     *
+     */
     function WithdrawLiquidity(uint256 liquid)
         external
         nonReentrant

@@ -81,7 +81,7 @@ contract MPtoken is MPbase {
      * @dev Constructor of ERC20 (token A) / ERC20 pool (token B)
      *
      * Parameters:
-     *   address erc20A             ERC20 address contract instance     
+     *   address erc20A             ERC20 address contract instance
      *   address erc20B             ERC20 address contract instance
      *   uint256 feeLIQ             fee is discounted for each swapp and partitioned between liquidity providers only (1..999) allowed
      *   uint256 feeOperation       fee is discounted for each swapp and send to operations account only (1..999) allowed
@@ -126,7 +126,6 @@ contract MPtoken is MPbase {
         _erc20A = erc20A;
         _tokenA = IERC20(erc20A);
     }
-
 
     /**
      * @dev  get token A address
@@ -210,7 +209,6 @@ contract MPtoken is MPbase {
         return totalLiquidity;
     }
 
-
     /**
      * @dev  Migrate from other pool
      *      reverts for any transfer failure
@@ -268,7 +266,6 @@ contract MPtoken is MPbase {
         );
         return totalLiquidity;
     }
-
 
     /**
      * @dev  Close and desactivacte this pool
@@ -356,7 +353,6 @@ contract MPtoken is MPbase {
             _tokenB.balanceOf(address(this)).mul(10).div(100)
         );
     }
-
 
     /**
      * @dev  Calculates the amount of tokensB to be delivered based on the amount of tokenA receive (swapp)
@@ -486,7 +482,6 @@ contract MPtoken is MPbase {
         return true;
     }
 
-
     /**
      * @dev  Make the collect of pendig rew to reward liq. user
      *      reverts for any transfer failure
@@ -519,7 +514,6 @@ contract MPtoken is MPbase {
 
         return true;
     }
-
 
     /**
      * @dev  Make the token A to token B swapp an transfer to user wallet
@@ -591,7 +585,6 @@ contract MPtoken is MPbase {
         return tokens_bought;
     }
 
-
     /**
      * @dev  Make the token B to token A swapp an transfer to user wallet
      *      reverts for any transfer failure
@@ -662,7 +655,6 @@ contract MPtoken is MPbase {
 
         return tka_bought;
     }
-
 
     /**
      * @dev get the Calculates the necesary amount of token in base of token A added for add liquidity operation
@@ -765,8 +757,6 @@ contract MPtoken is MPbase {
             liq.mul(_tokenB.balanceOf(address(this))).div(totalLiquidity);
         return (tka_amount, tokenB_amount);
     }
-
-
 
     /**
      * @dev Calculates the MAX amount of token A - token B that user can withdraw

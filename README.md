@@ -17,6 +17,7 @@ Iteration cycle:
 MPmanager.sol ---> NewPoolCOINrequest / NewPoolTokenrequest evt ---> DAPP (listen for new evts) 
 
 *******************  Depoloy new pool contract  (executor wallet use _depfee charge to deploy, init and confirm)
+
 *******************  Init new pool contract
 
 MPmanager.sol <----   call setConfirmedPool() <--------------call setConfirmedPool to confirm

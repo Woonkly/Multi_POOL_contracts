@@ -1,9 +1,4 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/math/SafeMath.sol";
-import "./MPbase.sol";
-
 /**
 MIT License
 
@@ -28,6 +23,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 */
+
+pragma solidity ^0.6.12;
+
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/math/SafeMath.sol";
+import "./MPbase.sol";
 
 contract MPcoin is MPbase {
     using SafeMath for uint256;
@@ -132,7 +132,6 @@ contract MPcoin is MPbase {
     /**
      * @dev  get this coin balance
      *
-     * Emits {CoinReceived} evt
      *
      * IMPORTANT: this function is obligatory for Besu blockchain compatibility don't remove!!
      */

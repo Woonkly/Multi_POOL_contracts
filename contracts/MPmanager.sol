@@ -1,16 +1,4 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/math/SafeMath.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/GSN/Context.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/utils/ReentrancyGuard.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/token/ERC20/ERC20.sol";
-import "https://github.com/Woonkly/MartinHSolUtils/releasev34/OwnersLMH.sol";
-import "https://github.com/Woonkly/MartinHSolUtils/releasev34/PausabledLMH.sol";
-import "https://github.com/Woonkly/MartinHSolUtils/releasev34/BaseLMH.sol";
-import "./MPLiquidityManager.sol";
-import "./MPcoin.sol";
-import "./MPtoken.sol";
 
 /**
 MIT License
@@ -36,6 +24,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 */
+
+pragma solidity ^0.6.12;
+
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/math/SafeMath.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/GSN/Context.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/utils/ReentrancyGuard.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.4/contracts/token/ERC20/ERC20.sol";
+import "https://github.com/Woonkly/MartinHSolUtils/releasev34/OwnersLMH.sol";
+import "https://github.com/Woonkly/MartinHSolUtils/releasev34/PausabledLMH.sol";
+import "https://github.com/Woonkly/MartinHSolUtils/releasev34/BaseLMH.sol";
+import "./MPLiquidityManager.sol";
+import "./MPcoin.sol";
+import "./MPtoken.sol";
 
 contract MPmanager is PausabledLMH, ReentrancyGuard {
     using SafeMath for uint256;
@@ -106,6 +107,17 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
 
     //Section functions
 
+    /**
+     * @dev  Contract POOL manager
+     *
+     *
+     * Parameter :
+     *          executor: wallet executor dapp (is to collect fee to be able to execute functions from the dapp)
+     *
+     *
+     *
+     *
+     */
     constructor(address payable executor) public {
         _executor = executor;
 
@@ -121,9 +133,22 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
 
     fallback() external payable {}
 
+    /**
+     * @dev  get base fee  necessary to be able to execute the deploy in the dapp
+     *
+     */
     function getDepFee() public view returns (uint256) {
         return _depfee;
     }
+
+    /**
+     * @dev set base fee  necessary to be able to execute the deploy in the dapp
+     *
+     * Emit {DepFeeChanged} evt
+     *
+     * Requirements:
+     *      only Is InOwners require
+     */
 
     function setDepFee(uint256 newFee) external onlyIsInOwners returns (bool) {
         uint256 old = _depfee;
@@ -132,10 +157,22 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev  get executor dapp wallet
+     *
+     */
     function getExecutor() public view returns (address) {
         return _executor;
     }
 
+    /**
+     * @dev set address executor dapp wallet
+     *
+     * Emit {ExecutorChanged} evt
+     *
+     * Requirements:
+     *      only Is InOwners require
+     */
     function setExecutor(address payable newexe)
         external
         onlyIsInOwners
@@ -148,30 +185,62 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev  get the amount of pools
+     *
+     */
     function getPoolsCount() public view returns (uint256) {
         return _PoolsCount;
     }
 
+    /**
+     * @dev  get the last index pools map
+     *
+     */
     function getLastIndexPools() public view returns (uint256) {
         return _lastIndexPools;
     }
 
+    /**
+     * @dev  get if poolID exist
+     *
+     */
     function _PoolExist(uint256 PoolID) internal view returns (bool) {
         return (_Pools[PoolID].flag == 1);
     }
 
+    /**
+     * @dev  get if address pool exist here
+     *
+     */
     function PoolExist(address pool) public view returns (bool) {
         return _PoolExist(_poolindex[pool]);
     }
 
+    /**
+     * @dev  get if  pool exist here by tokens address
+     *
+     */
     function PoolExist(address tka, address tkb) public view returns (bool) {
         return _PoolExist(_poolspairs[tka][tkb]);
     }
 
+    /**
+     * @dev  get if  pool index exist here
+     *
+     */
     function PoolIndexExist(uint256 index) public view returns (bool) {
         return _PoolExist(index);
     }
 
+    /**
+     * @dev  register here the new pool added
+     *
+     * Returns new liquidity pool.
+     *
+     * Emit {addNewPool} evt.
+     *
+     */
     function _newPool(
         address owner,
         address tka,
@@ -197,6 +266,25 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return _lastIndexPools;
     }
 
+    /**
+     * @dev  register here the new pool added
+     *
+     * Returns index of new  pool.
+     *
+     * Emit {addNewPool} evt.
+     *
+     * Parameters:
+     *   address owner wallet creator
+     *   address tka   erc20 contract addresss
+     *   address tkb   erc20 contract addresss
+     *   uint256 amounta  initial reserve amount
+     *   uint256 amountb    initial reserve amount
+     *   bool isCOIN    true is COIN (bnb/eth) with erc20 token
+     * Requirements:
+     *      only Is InOwners require not paused and pool not exist
+     *
+     * lock type: nonReentrant
+     */
     function newPool(
         address owner,
         address tka,
@@ -211,6 +299,22 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return _newPool(owner, tka, tkb, amounta, amountb, isCOIN);
     }
 
+    /**
+     * @dev  remove a registerd pool
+     *
+     * Returns new liquidity pool.
+     *
+     * Emit {PoolRemoved} evt.
+     *
+     * Parameters:
+     *   address tka   erc20 contract addresss
+     *   address tkb   erc20 contract addresss
+     *
+     * Requirements:
+     *      only Is InOwners require  and pool  exist
+     *
+     * lock type: nonReentrant
+     */
     function removePool(address tka, address tkb) external {
         require(OwnerExist(_msgSender()), "1");
         require(PoolExist(tka, tkb));
@@ -233,6 +337,23 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         emit PoolRemoved(tka, tkb);
     }
 
+    /**
+     * @dev  get pool info by address pair tokens
+     *
+     *
+     * Returns:
+     *       p.pool: address pool
+     *       p.owner: wallet creator
+     *       p.tokena: address of erc20 token A
+     *       p.tokenb: address of erc20 token B
+     *       p.amounta: amount of erc20 token A
+     *       p.amountb: amount of erc20 token B
+     *       p.isCOIN: true is COIN / erc20 token pair
+     *       p.isConfirmed: true if it was confirmed from the dapp
+     *       p.createdAt: timestamp date creation
+     *
+     * Remarks: return all values 0 state if pool not exist
+     */
     function getPool(address tka, address tkb)
         public
         view
@@ -276,6 +397,24 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         );
     }
 
+    /**
+     * @dev  get pool info by index
+     *
+     *
+     * Returns:
+     *       p.pool: address pool
+     *       p.owner: address wallet creator
+     *       p.tokena: address of erc20 token A
+     *       p.tokenb: address of erc20 token B
+     *       p.amounta: amount of erc20 token A
+     *       p.amountb: amount of erc20 token B
+     *       p.isCOIN: true is COIN / erc20 token pair
+     *       p.isConfirmed: true if it was confirmed from the dapp
+     *       p.createdAt: timestamp date creation
+     *       p.flag : flag state
+     *
+     * Remarks: return all values 0 state if pool not exist
+     */
     function getPoolByIndex(uint256 index)
         public
         view
@@ -322,6 +461,20 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         );
     }
 
+    /**
+     * @dev  get all registred pools
+     *
+     *
+     * Returns:
+     *       indexs: array  all pool index
+     *       powners: array  all address wallet creators
+     *       tkas: array  all address of erc20 tokens A
+     *       tkbs: array  all address of erc20 tokens B
+     *       iscons: array bool all confirmed pool state
+     *
+     * Remarks: return all emptys arrays if no pool
+     */
+
     function getAllPools()
         public
         view
@@ -356,7 +509,24 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return (indexs, powners, tkas, tkbs, iscons);
     }
 
-    function removeAllPools() external onlyIsInOwners returns (bool) {
+    /**
+     * @dev  remove all registed pools
+     *
+     *
+     * Emit {AllPoolsRemoved} evt.
+     *
+     *
+     * Requirements:
+     *      only Is InOwners require
+     *
+     * lock type: nonReentrant
+     */
+    function removeAllPools()
+        external
+        onlyIsInOwners
+        nonReentrant
+        returns (bool)
+    {
         for (uint32 i = 0; i < (_lastIndexPools + 1); i++) {
             _poolspairs[_Pools[i].tokena][_Pools[i].tokenb] = 0;
 
@@ -377,6 +547,10 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev  get is pool pending for comfirmation
+     *
+     */
     function isIndexPendig(uint256 poolIndex) public view returns (bool) {
         bool exist = false;
 
@@ -385,10 +559,18 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return exist;
     }
 
+    /**
+     * @dev  get all pending pool index (array)
+     *
+     */
     function getAllIndexPending() public view returns (uint256[] memory) {
         return _pending;
     }
 
+    /**
+     * @dev  get is pool pending for comfirmation by index
+     *
+     */
     function _pendingEXIST(uint256 poolIndex)
         internal
         view
@@ -405,6 +587,10 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return (false, 0);
     }
 
+    /**
+     * @dev  ad new pending pool index
+     *
+     */
     function _addPendig(uint256 poolIndex) internal returns (bool) {
         bool exist = false;
 
@@ -417,11 +603,24 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev  remove from pendings (index pool)
+     *
+     *
+     * Requirements:
+     *      only Is InOwners require
+     *
+     */
     function removeindexPending(uint256 poolIndex) external returns (bool) {
         require(OwnerExist(_msgSender()), "1");
         return _removePending(poolIndex);
     }
 
+    /**
+     * @dev  remove from pendings (index pool)
+     *
+     *
+     */
     function _removePending(uint256 poolIndex) internal returns (bool) {
         bool exist = false;
         uint256 ind = 0;
@@ -438,6 +637,18 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @dev  make new pool coin request call for dapp
+     *
+     *
+     * Emit {NewPoolCOINrequest} evt.
+     *
+     *
+     * Requirements:
+     *    payable  only Is InOwners and no paused and pool not exist and extra charge _depfee
+     *
+     * lock type: nonReentrant
+     */
     function newPoolCOINrequest(
         address tkb,
         uint256 amountcoin,
@@ -466,6 +677,18 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return indx;
     }
 
+    /**
+     * @dev  make new pool token/token request call for dapp
+     *
+     *
+     * Emit {NewPoolTOKENrequest} evt.
+     *
+     *
+     * Requirements:
+     *   payable   only Is InOwners and no paused and pool not exist require and extra charge _depfee
+     *
+     * lock type: nonReentrant
+     */
     function newPoolTOKENrequest(
         address tka,
         address tkb,
@@ -507,8 +730,22 @@ contract MPmanager is PausabledLMH, ReentrancyGuard {
         return indx;
     }
 
+    /**
+     * @dev  after pool is created by dapp call this function to set confirmed pool creation
+     *
+     *
+     * Emit {PoolConfirmed} evt.
+     *
+     *
+     * Requirements:
+     *      only Is InOwners and pool exist
+     *
+     * lock type: nonReentrant
+     */
+
     function setConfirmedPool(uint256 indx, address payable pool)
         external
+        nonReentrant
         returns (bool)
     {
         require(PoolIndexExist(indx), "1");

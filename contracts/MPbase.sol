@@ -208,7 +208,7 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         uint256 old;
 
         if (id == 1) {
-            require((value > 0 && value <= 1000000), "1");
+            require( value <= 1000000), "1");
             old = _feeLIQ;
             _feeLIQ = value;
         }
@@ -220,7 +220,7 @@ contract MPbase is BaseLMH, PausabledLMH, ReentrancyGuard {
         }
 
         if (id == 3) {
-            require((value > 0 && value <= 1000000), "1");
+            require(( value <= 1000000), "1");
             old = _feeSTAKE;
             _feeSTAKE = value;
         }

@@ -15,8 +15,10 @@ MPmanager.sol: It is responsible for registering the new pools created, and inte
 Iteration cycle:
                     send
 MPmanager.sol ---> NewPoolCOINrequest / NewPoolTokenrequest evt ---> DAPP (listen for new evts) 
-                                                                Depoloy new pool contract  (executor wallet use _depfee charge to deploy, init and confirm)
-                                                                Init new pool contract
+
+*******************  Depoloy new pool contract  (executor wallet use _depfee charge to deploy, init and confirm)
+*******************  Init new pool contract
+
 MPmanager.sol <----   call setConfirmedPool() <--------------call setConfirmedPool to confirm
 
 
@@ -26,6 +28,8 @@ It is administered from the rewards dapp from where a percentage of the fee take
 Iteration cycle:
 
 Pool-----> CollectRequested(_msgSender(), amount, isTKA) --> DAPP (listen for new evts) (executor wallet use _depfee charge to gets calls)
-                                                             DAPP check and transfer pending reward to end user wallet                               
+
+****************************  DAPP check and transfer pending reward to end user wallet                               
+
 Pool <-----------------------   WithdrawRewardDAPP() call <---- DAPP confirm ok transfer
 

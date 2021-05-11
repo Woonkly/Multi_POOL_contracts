@@ -16,7 +16,7 @@ Iteration cycle:
                     send
 MPmanager.sol ---> NewPoolCOINrequest / NewPoolTokenrequest evt ---> DAPP (listen for new evts) 
 
-*******************  Depoloy new pool contract  (executor wallet use _depfee charge to deploy, init and confirm)
+*******************  Deploy new pool contract  (executor wallet use _depfee charge to deploy, init and confirm)
 
 *******************  Init new pool contract
 
@@ -24,6 +24,7 @@ MPmanager.sol <----   call setConfirmedPool() <--------------call setConfirmedPo
 
 
 Deal rewards for liquidity providers:
+
 It is administered from the rewards dapp from where a percentage of the fee taken from each swapp is distributed to each liquidity provider in proportion to the aggregate liquidity, then it can be withdrawn by the liquidity provider through the interaction between the dapp and the pools:
 
 Iteration cycle:
